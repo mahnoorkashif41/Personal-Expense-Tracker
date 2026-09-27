@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aether Ledger — Personal Expense Tracker</title>
+    <meta name="description" content="A polished personal expense tracker with budgets, charts, and CSV export." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#expenses">Skip to expenses</a>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" id="brand-icon"></div>
+          <div>
+            <h1>Aether Ledger</h1>
+            <p>Personal expense command center</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="sr-only" for="month">Selected month</label>
+          <select id="month" class="month-select"></select>
+          <button class="btn btn-ghost" id="export-btn" type="button"></button>
+          <button class="btn btn-primary fab" id="add-btn" type="button"></button>
+        </div>
+      </header>
+
+      <section class="stats-grid" aria-label="Monthly statistics">
+        <article class="card stat-card accent">
+          <div class="stat-label" id="stat-spent-label"></div>
+          <div class="stat-value" id="stat-spent">—</div>
+          <div class="stat-hint" id="stat-spent-hint"></div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-label" id="stat-count-label"></div>
+          <div class="stat-value" id="stat-count">—</div>
+          <div class="stat-hint">Logged this month</div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-label" id="stat-avg-label"></div>
+          <div class="stat-value" id="stat-avg">—</div>
+          <div class="stat-hint">Per transaction</div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-label" id="stat-left-label"></div>
+          <div class="stat-value" id="stat-left">—</div>
+          <div class="stat-hint" id="stat-left-hint"></div>
+        </article>
+      </section>
+
+      <section class="budget-row">
+        <article class="card">
+          <div class="chart-head">
+            <div>
+              <h2>Monthly budget</h2>
+              <p id="budget-caption">Keep spending inside the plan.</p>
+            </div>
+          </div>
+          <div class="progress" id="budget-progress"><span id="budget-bar"></span></div>
+          <p class="stat-hint" id="budget-status"></p>
+          <form class="budget-form" id="budget-form">
+            <label class="sr-only" for="budget-input">Budget amount</label>
+            <input class="input" id="budget-input" type="number" min="0" step="100" required />
+            <button class="btn btn-ghost" type="submit">Save budget</button>
+          </form>
+        </article>
+        <article class="card">
+          <div class="chart-head">
+            <div>
+              <h2>Six-month spending</h2>
+              <p>How this month compares to recent history.</p>
+            </div>
+          </div>
+          <div class="chart-frame"><canvas id="monthly-chart" aria-label="Monthly spending bar chart"></canvas></div>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="card">
+          <div class="chart-head">
+            <div>
+              <h2>Daily spending trend</h2>
+              <p>Running spend across the selected month.</p>
+            </div>
+          </div>
+          <div class="chart-frame"><canvas id="trend-chart" aria-label="Daily spending line chart"></canvas></div>
+        </article>
+        <article class="card">
+          <div class="chart-head">
+            <div>
+              <h2>Category mix</h2>
+              <p>Where the month’s money went.</p>
+            </div>
+          </div>
+          <div class="chart-frame"><canvas id="category-chart" aria-label="Category doughnut chart"></canvas></div>
+          <div class="legend" id="category-legend"></div>
+        </article>
+      </section>
+
+      <section class="card" id="expenses">
+        <div class="section-head chart-head">
+          <div>
+            <h2>Expenses</h2>
+            <p>Search, filter, and keep the ledger honest.</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span id="search-icon"></span>
+            <label class="sr-only" for="search">Search expenses</label>
+            <input class="search" id="search" type="search" placeholder="Search by title or category" />
+          </div>
+          <label class="sr-only" for="category-filter">Category</label>
+          <select class="select" id="category-filter"></select>
+          <label class="sr-only" for="sort-key">Sort by</label>
+          <select class="select" id="sort-key">
+            <option value="date">Sort: Date</option>
+            <option value="amount">Sort: Amount</option>
+            <option value="title">Sort: Title</option>
+          </select>
+          <button class="btn btn-ghost" id="sort-dir" type="button" aria-label="Toggle sort direction">Newest first</button>
+        </div>
+        <div class="list" id="expense-list" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+      <form class="modal" id="expense-form">
+        <h2 id="modal-title">Add expense</h2>
+        <label class="field">
+          <span>Title</span>
+          <input class="input" id="field-title" name="title" maxlength="80" required autocomplete="off" />
+          <small class="field-error" id="err-title"></small>
+        </label>
+        <label class="field">
+          <span>Amount (PKR)</span>
+          <input class="input" id="field-amount" name="amount" type="number" min="0.01" step="0.01" required />
+          <small class="field-error" id="err-amount"></small>
+        </label>
+        <label class="field">
+          <span>Category</span>
+          <select class="select" id="field-category" name="category" required></select>
+        </label>
+        <label class="field">
+          <span>Date</span>
+          <input class="input" id="field-date" name="date" type="date" required />
+        </label>
+        <input type="hidden" id="field-id" />
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="cancel-btn" type="button">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save expense</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-backdrop" id="confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+      <div class="modal">
+        <h2 id="confirm-title">Delete expense?</h2>
+        <p class="stat-hint">This cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="confirm-cancel" type="button">Keep it</button>
+          <button class="btn btn-danger" id="confirm-ok" type="button">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toasts" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
